@@ -1,15 +1,14 @@
 /*
-	heap
-	This question requires you to implement a binary heap function
+    heap
+    This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
 
 use std::cmp::Ord;
 use std::default::Default;
 
 pub struct Heap<T>
 where
-    T: Default,
+    T: Default + Clone,
 {
     count: usize,
     items: Vec<T>,
@@ -18,7 +17,7 @@ where
 
 impl<T> Heap<T>
 where
-    T: Default,
+    T: Default + Clone,
 {
     pub fn new(comparator: fn(&T, &T) -> bool) -> Self {
         Self {
@@ -37,34 +36,61 @@ where
     }
 
     pub fn add(&mut self, value: T) {
-        //TODO
+        self.count += 1;
+        if self.items.len() <= self.count {
+            self.items.push(value);
+        } else {
+            self.items[self.count] = value;
+        }
+        self.sift_up(self.count);
     }
 
-    fn parent_idx(&self, idx: usize) -> usize {
+    fn parent_idx(idx: usize) -> usize {
         idx / 2
     }
 
     fn children_present(&self, idx: usize) -> bool {
-        self.left_child_idx(idx) <= self.count
+        idx * 2 <= self.count
     }
 
-    fn left_child_idx(&self, idx: usize) -> usize {
+    fn left_child_idx(idx: usize) -> usize {
         idx * 2
     }
 
-    fn right_child_idx(&self, idx: usize) -> usize {
-        self.left_child_idx(idx) + 1
+    fn right_child_idx(idx: usize) -> usize {
+        idx * 2 + 1
     }
 
-    fn smallest_child_idx(&self, idx: usize) -> usize {
-        //TODO
-		0
+    fn sift_up(&mut self, mut idx: usize) {
+        let cmp = self.comparator;
+        while idx > 1 && cmp(&self.items[idx], &self.items[Self::parent_idx(idx)]) {
+            self.items.swap(idx, Self::parent_idx(idx));
+            idx = Self::parent_idx(idx);
+        }
+    }
+
+    fn sift_down(&mut self, mut idx: usize) {
+        let cmp = self.comparator;
+        while self.children_present(idx) {
+            let left = Self::left_child_idx(idx);
+            let right = Self::right_child_idx(idx);
+            let mut child = left;
+            if right <= self.count && cmp(&self.items[right], &self.items[left]) {
+                child = right;
+            }
+            if cmp(&self.items[child], &self.items[idx]) {
+                self.items.swap(idx, child);
+                idx = child;
+            } else {
+                break;
+            }
+        }
     }
 }
 
 impl<T> Heap<T>
 where
-    T: Default + Ord,
+    T: Default + Ord + Clone,
 {
     /// Create a new MinHeap
     pub fn new_min() -> Self {
@@ -79,13 +105,22 @@ where
 
 impl<T> Iterator for Heap<T>
 where
-    T: Default,
+    T: Default + Clone,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        //TODO
-		None
+        if self.is_empty() {
+            return None;
+        }
+        let result = self.items[1].clone();
+        self.items[1] = self.items[self.count].clone();
+        self.count -= 1;
+        if self.count > 0 {
+            self.sift_down(1);
+        }
+        self.items.truncate(self.count + 1);
+        Some(result)
     }
 }
 
@@ -95,9 +130,9 @@ impl MinHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
     where
-        T: Default + Ord,
+        T: Default + Ord + Clone,
     {
-        Heap::new(|a, b| a < b)
+        Heap::new_min()
     }
 }
 
@@ -107,15 +142,16 @@ impl MaxHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
     where
-        T: Default + Ord,
+        T: Default + Ord + Clone,
     {
-        Heap::new(|a, b| a > b)
+        Heap::new_max()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_empty_heap() {
         let mut heap = MaxHeap::new::<i32>();
@@ -135,6 +171,8 @@ mod tests {
         assert_eq!(heap.next(), Some(9));
         heap.add(1);
         assert_eq!(heap.next(), Some(1));
+        assert_eq!(heap.next(), Some(11));
+        assert_eq!(heap.next(), None);
     }
 
     #[test]
@@ -150,5 +188,7 @@ mod tests {
         assert_eq!(heap.next(), Some(4));
         heap.add(1);
         assert_eq!(heap.next(), Some(2));
+        assert_eq!(heap.next(), Some(1));
+        assert_eq!(heap.next(), None);
     }
-}
+}    

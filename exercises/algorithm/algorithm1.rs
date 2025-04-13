@@ -2,8 +2,7 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
-
+// 
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
 use std::vec::*;
@@ -70,13 +69,50 @@ impl<T> LinkedList<T> {
         }
     }
 	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+where
+    T: Ord,
+{
+    let mut merged_list = LinkedList::new();
+    let mut current_a = list_a.start;
+    let mut current_b = list_b.start;
+
+    while current_a.is_some() || current_b.is_some() {
+        match (current_a, current_b) {
+            (Some(node_a), Some(node_b)) => {
+                let val_a = unsafe { &(*node_a.as_ptr()).val };
+                let val_b = unsafe { &(*node_b.as_ptr()).val };
+                if val_a <= val_b {
+                    let next = unsafe { (*node_a.as_ptr()).next };
+                    let node = unsafe { Box::from_raw(node_a.as_ptr()) };
+                    merged_list.add(node.val);
+                    current_a = next;
+                    current_b = Some(node_b);
+                } else {
+                    let next = unsafe { (*node_b.as_ptr()).next };
+                    let node = unsafe { Box::from_raw(node_b.as_ptr()) };
+                    merged_list.add(node.val);
+                    current_a = Some(node_a);
+                    current_b = next;
+                }
+            }
+            (Some(node_a), None) => {
+                let next = unsafe { (*node_a.as_ptr()).next };
+                let node = unsafe { Box::from_raw(node_a.as_ptr()) };
+                merged_list.add(node.val);
+                current_a = next;
+            }
+            (None, Some(node_b)) => {
+                let next = unsafe { (*node_b.as_ptr()).next };
+                let node = unsafe { Box::from_raw(node_b.as_ptr()) };
+                merged_list.add(node.val);
+                current_b = next;
+            }
+            (None, None) => break,
         }
+    }
+
+    merged_list
+
 	}
 }
 
